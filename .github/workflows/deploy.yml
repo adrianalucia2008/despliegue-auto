@@ -36,16 +36,18 @@ jobs:
         run: |
           docker build --no-cache -t app-flask:test .
 
+      - name: Instalar Trivy CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget apt-transport-https gnupg lsb-release
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
+          echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install -y trivy
+
       - name: Análisis de Vulnerabilidades en Contenedores (Trivy)
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: 'app-flask:test'
-          format: 'table'
-          exit-code: '1'
-          ignore-unfixed: true
-          vuln-type: 'os,library'
-          severity: 'CRITICAL,HIGH'
-          skip-dirs: '/opt/hostedtoolcache,/tmp'
+        run: |
+          trivy image --exit-code 1 --ignore-unfixed --severity CRITICAL,HIGH app-flask:test
 
   despliegue:
     needs: pruebas-y-seguridad
@@ -65,3 +67,4 @@ jobs:
             cd ~/despliegue_automatizado
             git pull origin main
             docker compose up -d --build
+            
