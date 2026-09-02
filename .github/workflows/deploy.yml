@@ -45,7 +45,7 @@ jobs:
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
-          trivyopts: '--skip-dirs /opt/hostedtoolcache'
+          skip-dirs: '/opt/hostedtoolcache,/tmp'
 
   despliegue:
     needs: pruebas-y-seguridad
