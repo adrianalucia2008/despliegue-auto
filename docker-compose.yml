@@ -1,4 +1,95 @@
-version: '3.8'
+services:
+  # 1. Base de datos MySQL
+  db:
+    image: mysql:8.0
+    container_name: mysql_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpass}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-adso_db}
+      MYSQL_USER: ${MYSQL_USER:-appuser}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-apppass}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 2. Aplicación Flask Backend
+  web:
+    build: .
+    container_name: flask_app
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      DB_HOST: db
+      DB_USER: ${MYSQL_USER:-appuser}
+      DB_PASSWORD: ${MYSQL_PASSWORD:-apppass}
+      DB_NAME: ${MYSQL_DATABASE:-adso_db}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  # 3. Nginx Proxy Manager
+  proxy:
+    image: jc21/nginx-proxy-manager:latest
+    container_name: nginx_proxy_manager
+    restart: always
+    ports:
+      - "80:80"
+      - "81:81"
+      - "443:443"
+    volumes:
+      - npm_data:/data
+      - npm_letsencrypt:/etc/letsencrypt
+    networks:
+      - app-network
+
+  # 4. phpMyAdmin (Gestión visual de MySQL)
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: phpmyadmin_app
+    restart: always
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: db
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpass}
+    depends_on:
+      - db
+    networks:
+      - app-network
+
+  # 5. Uptime Kuma (Monitoreo y Estado)
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    container_name: uptime_kuma
+    restart: always
+    ports:
+      - "3001:3001"
+    volumes:
+      - uptime_kuma_data:/app/data
+    networks:
+      - app-network
+
+  # 6. Dozzle (Visor de logs en tiempo real)
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: dozzle_app
+    restart: always
+    ports:
+      - "8888:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - app-network
 
 networks:
   app-network:
@@ -8,45 +99,4 @@ volumes:
   mysql_data:
   npm_data:
   npm_letsencrypt:
-
-services:
-  db:
-    image: mysql:8.0
-    container_name: mysql_db
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-    volumes:
-      - mysql_data:/var/lib/mysql
-    networks:
-      - app-network
-
-  web:
-    build: .
-    container_name: flask_app
-    restart: always
-    ports:
-      - "5000:5000"
-    environment:
-      DATABASE_URL: mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db:3306/${MYSQL_DATABASE}
-    depends_on:
-      - db
-    networks:
-      - app-network
-
-  proxy:
-    image: 'jc21/nginx-proxy-manager:latest'
-    container_name: nginx_proxy_manager
-    restart: always
-    ports:
-      - '80:80'
-      - '81:81'
-      - '443:443'
-    volumes:
-      - npm_data:/data
-      - npm_letsencrypt:/etc/letsencrypt
-    networks:
-      - app-network
+  uptime_kuma_data:
