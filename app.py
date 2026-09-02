@@ -3,8 +3,6 @@ from flask import Flask, jsonify
 
 app = Flask(__name__)
 
-DB_PASSWORD = "super_secret_password_12345"
-
 @app.route('/')
 def home():
     return jsonify({
