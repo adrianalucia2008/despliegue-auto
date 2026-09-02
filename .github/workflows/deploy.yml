@@ -1,0 +1,49 @@
+name: CI/CD Pipeline - Misión 1
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: Pruebas Unitarias
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar Código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Instalar Dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Ejecutar Pruebas con Pytest
+        run: |
+          pytest test_app.py
+
+  deploy:
+    name: Despliegue Automatizado a EC2
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar Código
+        uses: actions/checkout@v4
+
+      - name: Desplegar por SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd ~/despliegue_automatizado
+            git pull origin main
+            docker compose up -d --build
