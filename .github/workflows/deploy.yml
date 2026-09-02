@@ -30,7 +30,7 @@ jobs:
 
       - name: Análisis Estático de Seguridad Python (Bandit)
         run: |
-          bandit -r . -x ./test_app.py,./.venv -sk B104
+          bandit -r . -x ./test_app.py,./.venv -s B104
 
       - name: Construir Imagen Docker para Análisis
         run: |
