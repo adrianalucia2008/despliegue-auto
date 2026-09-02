@@ -2,8 +2,8 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-
-RUN pip install --upgrade pip "setuptools>=78.1.1" wheel
+# Actualizar herramientas base a versiones seguras
+RUN pip install --upgrade --no-cache-dir pip "setuptools>=78.1.1" wheel
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
